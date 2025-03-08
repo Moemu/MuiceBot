@@ -12,6 +12,6 @@ pydantic==2.10.5
 ruamel.yaml==0.18.10
 SQLAlchemy==2.0.38
 torch==2.6.0
-transformers==4.46.3
+transformers==4.48.0
 websocket_client==1.8.0
 aiosqlite>=0.17.0
