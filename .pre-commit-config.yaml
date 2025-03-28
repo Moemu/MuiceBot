@@ -1,8 +1,8 @@
 ci:
   autofix_commit_msg: "style: auto fix by pre-commit hooks"
-  autofix_prs: true
+  autofix_prs: false
   autoupdate_branch: main
-  autoupdate_schedule: quarterly
+  autoupdate_schedule: monthly
   autoupdate_commit_msg: "chore: auto update by pre-commit hooks"
 
 
@@ -18,6 +18,8 @@ repos:
     hooks:
       - id: mypy # mypy 类型检查
         args: ["--install-types", "--non-interactive", "--ignore-missing-imports"]
+        additional_dependencies:
+            - types-PyYAML
 
   - repo: https://github.com/psf/black
     rev: 25.1.0

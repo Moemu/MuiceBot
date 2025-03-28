@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 
@@ -11,11 +12,14 @@ from ._types import Message
 class Database:
     def __init__(self) -> None:
         self.DB_PATH = store.get_plugin_data_dir().joinpath("ChatHistory.db").resolve()
+
+        asyncio.run(self.init_db())
+
         logger.info(f"数据库路径: {self.DB_PATH}")
 
     async def init_db(self) -> None:
         """初始化数据库，检查数据库是否存在，不存在则创建"""
-        if not os.path.isfile(self.DB_PATH):
+        if not os.path.isfile(self.DB_PATH) or self.DB_PATH.stat().st_size == 0:
             logger.info("数据库不存在，正在创建...")
             await self.__create_database()
 

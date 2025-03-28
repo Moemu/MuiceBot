@@ -1,6 +1,5 @@
 import random
 
-import yaml
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
@@ -8,6 +7,7 @@ from nonebot import logger
 from nonebot.adapters import Bot
 from nonebot.adapters.onebot.v12 import Message
 
+from .config import get_schedule_configs
 from .muice import Muice
 
 
@@ -58,30 +58,24 @@ async def model_ask(muice_app: Muice, bot: Bot, prompt: str, **kwargs):
     await bot.call_api("send_message", **kwargs)
 
 
-# 读取 YAML 配置文件
-def load_config_jobs(file_path="configs.yml") -> list[dict]:
-    with open(file_path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f).get("schedule", [])
-
-
 def setup_scheduler(muice: Muice, bot: Bot) -> AsyncIOScheduler:
     """
     设置任务调度器
 
     :param muice: 沐雪核心类，用于与大语言模型交互
     """
-    jobs = load_config_jobs()
+    jobs = get_schedule_configs()
     scheduler = AsyncIOScheduler()
 
     if not jobs:
         jobs = []
 
     for job in jobs:
-        job_id = job["id"]
-        job_type = "send_message" if job.get("say", None) else "model_ask"
-        trigger_type = job["trigger"]
-        trigger_args = job["args"]
-        bot_args = job["target"]
+        job_id = job.id
+        job_type = "send_message" if job.say else "model_ask"
+        trigger_type = job.trigger
+        trigger_args = job.args
+        bot_args = job.target
 
         # 解析触发器
         if trigger_type == "cron":
@@ -101,7 +95,7 @@ def setup_scheduler(muice: Muice, bot: Bot) -> AsyncIOScheduler:
                 trigger,
                 id=job_id,
                 replace_existing=True,
-                args=[bot, job.get("say", "")],
+                args=[bot, job.say],
                 kwargs=bot_args,
             )
         else:
@@ -110,11 +104,11 @@ def setup_scheduler(muice: Muice, bot: Bot) -> AsyncIOScheduler:
                 trigger,
                 id=job_id,
                 replace_existing=True,
-                args=[muice, bot, job.get("ask", "")],
+                args=[muice, bot, job.ask],
                 kwargs=bot_args,
             )
 
-        logger.info(f"定时任务 {job_id} 已注册")
+        logger.success(f"已注册定时任务: {job_id}")
 
     scheduler.start()
     return scheduler

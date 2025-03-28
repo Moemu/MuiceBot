@@ -1,6 +1,6 @@
 name: Pre-commit checks
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   pre-commit:
@@ -23,7 +23,7 @@ jobs:
         python -m pip install pdm
         python -m pip install pre-commit
         pdm config python.use_venv false
-        pdm install --no-lock --group dev
+        pdm install --frozen-lockfile --group dev
         pre-commit install
 
     - name: Run pre-commit

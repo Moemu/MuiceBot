@@ -240,6 +240,7 @@ class Xfyun(BasicModel):
         prompt: str,
         history: List[Message],
         images: Optional[List[str]] = [],
+        tools: Optional[List[dict]] = [],
         stream: Literal[False] = False,
         **kwargs,
     ) -> str: ...
@@ -250,6 +251,7 @@ class Xfyun(BasicModel):
         prompt: str,
         history: List[Message],
         images: Optional[List[str]] = [],
+        tools: Optional[List[dict]] = [],
         stream: Literal[True] = True,
         **kwargs,
     ) -> AsyncGenerator[str, None]: ...
@@ -259,6 +261,7 @@ class Xfyun(BasicModel):
         prompt: str,
         history: List[Message],
         images: Optional[List[str]] = [],
+        tools: Optional[List[dict]] = [],
         stream: Optional[bool] = False,
         **kwargs,
     ) -> Union[AsyncGenerator[str, None], str]:

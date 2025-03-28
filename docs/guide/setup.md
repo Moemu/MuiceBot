@@ -4,9 +4,7 @@
 
 建议环境：
 
-- 安装好 `nb-cli` 环境的 Python 3.10 及以上 Python 版本
-
-如果您计划在本地与大语言模型交互，我们强烈建议您创建一个虚拟环境。
+- Python 3.10 及以上 Python 版本
 
 ## 安装插件⚙️
 
@@ -14,6 +12,7 @@
 
 ```shell
 git clone https://github.com/Moemu/MuiceBot
+cd MuiceBot
 ```
 
 然后安装依赖：

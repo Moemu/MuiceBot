@@ -4,7 +4,7 @@ import ollama
 from nonebot import logger
 from ollama import ResponseError
 
-from ._types import BasicModel, Message, ModelConfig
+from ._types import BasicModel, Message, ModelConfig, function_call_handler
 from .utils.auto_system_prompt import auto_system_prompt
 from .utils.images import get_image_base64
 
@@ -31,6 +31,8 @@ class Ollama(BasicModel):
         self.auto_system_prompt = self.config.auto_system_prompt
         self.user_instructions = self.config.user_instructions
         self.auto_user_instructions = self.config.auto_user_instructions
+
+        self._tools: List[dict] = []
 
     def load(self) -> bool:
         try:
@@ -91,6 +93,7 @@ class Ollama(BasicModel):
             response = await self.client.chat(
                 model=self.model,
                 messages=messages,
+                tools=self._tools,
                 stream=False,
                 options={
                     "temperature": self.temperature,
@@ -101,17 +104,36 @@ class Ollama(BasicModel):
                     "frequency_penalty": self.frequency_penalty,
                 },
             )
+
+            tool_calls = response.message.tool_calls
+
+            if not tool_calls:
+                return response.message.content if response.message.content else "(警告：模型无返回)"
+
+            for tool in tool_calls:
+                function_name = tool.function.name
+                function_args = tool.function.arguments
+
+                logger.info(f"function call 请求 {function_name}, 参数: {function_args}")
+                function_return = await function_call_handler(function_name, dict(function_args))
+                logger.success(f"Function call 成功，返回: {function_return}")
+
+                messages.append(response.message)
+                messages.append({"role": "tool", "content": str(function_return), "name": tool.function.name})
+                return await self._ask_sync(messages)
+
         except ollama.ResponseError as e:
             logger.error(f"模型调用错误: {e.error}")
             return f"模型调用错误: {e.error}"
 
-        return response.message.content if response.message.content else "(警告：模型无返回)"
+        return "模型调用错误: 未知错误"
 
     async def _ask_stream(self, messages: list) -> AsyncGenerator[str, None]:
         try:
             response = await self.client.chat(
                 model=self.model,
                 messages=messages,
+                tools=self._tools,
                 stream=True,
                 options={
                     "temperature": self.temperature,
@@ -126,8 +148,28 @@ class Ollama(BasicModel):
             async for chunk in response:
                 logger.debug(chunk)
 
+                tool_calls = chunk.message.tool_calls
+
                 if chunk.message.content:
                     yield chunk.message.content
+                    continue
+
+                if not tool_calls:
+                    continue
+
+                for tool in tool_calls:  # type:ignore
+                    function_name = tool.function.name
+                    function_args = tool.function.arguments
+
+                    logger.info(f"function call 请求 {function_name}, 参数: {function_args}")
+                    function_return = await function_call_handler(function_name, dict(function_args))
+                    logger.success(f"Function call 成功，返回: {function_return}")
+
+                    messages.append(chunk.message)  # type:ignore
+                    messages.append({"role": "tool", "content": str(function_return), "name": tool.function.name})
+
+                    async for chunk in self._ask_stream(messages):
+                        yield chunk
 
         except ollama.ResponseError as e:
             logger.error(f"模型调用错误: {e.error}")
@@ -139,6 +181,7 @@ class Ollama(BasicModel):
         prompt: str,
         history: List[Message],
         images: Optional[List[str]] = [],
+        tools: Optional[List[dict]] = [],
         stream: Literal[False] = False,
         **kwargs,
     ) -> str: ...
@@ -149,6 +192,7 @@ class Ollama(BasicModel):
         prompt: str,
         history: List[Message],
         images: Optional[List[str]] = [],
+        tools: Optional[List[dict]] = [],
         stream: Literal[True] = True,
         **kwargs,
     ) -> AsyncGenerator[str, None]: ...
@@ -158,6 +202,7 @@ class Ollama(BasicModel):
         prompt: str,
         history: List[Message],
         images: Optional[List[str]] = [],
+        tools: Optional[List[dict]] = [],
         stream: Optional[bool] = False,
         **kwargs,
     ) -> Union[AsyncGenerator[str, None], str]:
@@ -167,6 +212,7 @@ class Ollama(BasicModel):
         :param image_path: 图像路径
         :return: 识别结果
         """
+        self._tools = tools if tools else []
         messages = self._build_messages(prompt, history, images)
 
         if stream:

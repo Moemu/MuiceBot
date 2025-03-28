@@ -21,12 +21,12 @@
     },
     {
         "type": "file",
-        "name": "migrations",
-        "label": "从 Chatbot 中迁移"
+        "name": "QA",
+        "label": "疑难解答"
     },
     {
         "type": "file",
-        "name": "QA",
-        "label": "疑难解答"
+        "name": "migrations",
+        "label": "从 Chatbot 中迁移"
     }
 ]

@@ -15,6 +15,11 @@
     "activeMatch": "/model/"
   },
   {
+    "text": "开发",
+    "link": "/develop/plugin",
+    "activeMatch": "/develop/"
+  },
+  {
     "text": "关于",
     "link": "/about/",
     "activeMatch": "/about/"

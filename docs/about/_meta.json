@@ -8,10 +8,5 @@
         "type": "file",
         "name": "Muice",
         "label": "关于沐雪"
-    },
-    {
-        "type": "file",
-        "name": "Nonebot",
-        "label": "关于赛博毒品"
     }
 ]
