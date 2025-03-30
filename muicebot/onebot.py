@@ -413,7 +413,7 @@ async def handle_command_start():
 
 async def get_image_paths(message_images: List[Image], event: Event) -> List[str]:
     """统一处理图片路径获取逻辑"""
-    image_paths = []
+    image_paths: List[str] = []
     if not muice.multimodal:
         return image_paths
 

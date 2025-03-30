@@ -38,7 +38,6 @@ class PluginConfig(BaseModel):
     """非活跃时间段系数"""
 
 
-
 plugin_config = get_plugin_config(PluginConfig)
 
 
