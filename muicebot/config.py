@@ -30,6 +30,13 @@ class PluginConfig(BaseModel):
     """句首触发词触发系数"""
     random_trigger_probability_coefficient: float = 0.01
     """任意消息触发概率"""
+    active_time_ranges: list = [("22:00", "02:00"), ("09:00", "18:00")]
+    """活跃时间段"""
+    active_coefficient: float = 1
+    """活跃时间段系数"""
+    unactive_coefficient: float = 0.5
+    """非活跃时间段系数"""
+
 
 
 plugin_config = get_plugin_config(PluginConfig)

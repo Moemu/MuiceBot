@@ -492,6 +492,9 @@ async def handle_supported_adapters(
     message_text = message.extract_plain_text()
     message_images = message.get(Image)
     userid = event.get_user_id()
+    group_id = event.group_id
+    if not random_reply.at_reply(userid, group_id, message_text):
+        return
 
     # 空消息检查
     if not message_text:
