@@ -17,7 +17,7 @@ from nonebot_plugin_alconna import (
 )
 from nonebot_plugin_alconna.uniseg import Image, UniMsg
 
-from muicebot.utils.randomReply import RandomReply
+from muicebot.utils.random_reply import RandomReply
 from .config import plugin_config
 from .muice import Muice
 from .plugin import get_plugins, load_plugins, set_ctx
@@ -193,7 +193,6 @@ async def handle_command_reset(event: Event):
     userid = event.get_user_id()
     response = await muice.reset(userid)
     await command_reset.finish(response)
-
 
 
 @command_refresh.handle()
