@@ -1,6 +1,6 @@
-import re
+from typing import List
 
-from arclet.alconna import Alconna, AllParam, Args
+from arclet.alconna import Alconna, Args
 from nonebot import get_adapters, get_bot, get_driver, logger, on_message
 from nonebot.adapters import Bot, Event
 from nonebot.matcher import Matcher
@@ -13,10 +13,11 @@ from nonebot_plugin_alconna import (
     Match,
     UniMessage,
     on_alconna,
+    MsgTarget,
 )
 from nonebot_plugin_alconna.uniseg import Image, UniMsg
 
-from .config import plugin_config
+from muicebot.utils.randomReply import RandomReply
 from .muice import Muice
 from .plugin import get_plugins, load_plugins, set_ctx
 from .scheduler import setup_scheduler
@@ -25,9 +26,7 @@ from .utils.utils import legacy_get_images, save_image_as_file
 muice = Muice()
 scheduler = None
 
-muice_nicknames = plugin_config.muice_nicknames
-regex_patterns = [f"^{re.escape(nick)}\\s*" for nick in muice_nicknames]
-combined_regex = "|".join(regex_patterns)
+random_reply = RandomReply()
 
 driver = get_driver()
 adapters = get_adapters()
@@ -44,15 +43,15 @@ async def load_bot():
     logger.success(f"模型适配器加载成功: {muice.model_loader} ⭐")
 
     logger.info("加载 MuiceBot 插件...")
-    for plugin_dir in plugin_config.plugins_dir:
-        load_plugins(plugin_dir)
+    load_plugins("./muicebot/builtin_plugins")
+    load_plugins("./muicebot/plugins")
     logger.success("插件加载完成⭐")
 
     logger.success("MuiceBot 已准备就绪✨")
 
 
 @driver.on_bot_connect
-async def bot_conncted():
+async def bot_connected():
     logger.success("Bot 已连接，消息处理进程开始运行✨")
 
 
@@ -117,13 +116,9 @@ command_whoami = on_alconna(
     block=True,
 )
 
-nickname_event = on_alconna(
-    Alconna(re.compile(combined_regex), Args["text?", AllParam], separators=""),
-    priority=99,
-    block=True,
-)
+message_event = on_message(priority=100, block=True)
 
-at_event = on_message(priority=100, rule=to_me(), block=True)
+at_event = on_message(priority=99, rule=to_me(), block=True)
 
 
 @driver.on_bot_connect
@@ -204,32 +199,12 @@ async def handle_command_refresh(event: Event):
     userid = event.get_user_id()
     response = await muice.refresh(userid)
 
-    if isinstance(response, str):
-        paragraphs = response.split("\n\n")
+    paragraphs = response.split("\n")
 
-        for index, paragraph in enumerate(paragraphs):
-            if index == len(paragraphs) - 1:
-                await command_refresh.finish(paragraph)
-            await command_refresh.send(paragraph)
-
-        return
-
-    current_paragraph = ""
-
-    async for chunk in response:
-        current_paragraph += chunk
-        paragraphs = current_paragraph.split("\n\n")
-
-        while len(paragraphs) > 1:
-            current_paragraph = paragraphs[0].strip()
-            if current_paragraph:
-                await UniMessage(current_paragraph).send()
-            paragraphs = paragraphs[1:]
-
-        current_paragraph = paragraphs[-1].strip()
-
-    if current_paragraph:
-        await UniMessage(current_paragraph).finish()
+    for index, paragraph in enumerate(paragraphs):
+        if index == len(paragraphs) - 1:
+            await command_refresh.finish(paragraph)
+        await command_refresh.send(paragraph)
 
 
 @command_undo.handle()
@@ -252,70 +227,8 @@ async def handle_command_whoami(event: Event):
 
 
 @command_start.handle()
-async def handle_command_strt():
+async def handle_command_start():
     pass
-
-
-@at_event.handle()
-@nickname_event.handle()
-async def handle_supported_adapters(message: UniMsg, event: Event, bot: Bot, state: T_State, matcher: Matcher):
-    message_text = message.extract_plain_text()
-    message_images = message.get(Image)
-    userid = event.get_user_id()
-
-    image_paths = []
-
-    if muice.multimodal:
-        for img in message_images:
-
-            if not img.url:
-                # 部分 Onebot 适配器实现无法直接获取url，尝试回退至传统获取方式
-                logger.warning("无法通过通用方式获取图片URL，回退至传统方式...")
-                image_paths = list(set([await legacy_get_images(img.origin, event) for img in message_images]))
-                break
-
-            image_paths.append(await save_image_as_file(img.url, img.name))
-
-    logger.info(f"收到消息: {message_text}")
-
-    if not (message_text or image_paths):
-        return
-
-    set_ctx(bot, event, state, matcher)  # 注册上下文信息以供模型调用
-
-    if muice.model_config.stream:
-        current_paragraph = ""
-
-        async for chunk in muice.ask_stream(message_text, userid, image_paths=image_paths):
-            current_paragraph += chunk
-            paragraphs = current_paragraph.split("\n\n")
-
-            while len(paragraphs) > 1:
-                current_paragraph = paragraphs[0].strip()
-                if current_paragraph:
-                    await UniMessage(current_paragraph).send()
-                paragraphs = paragraphs[1:]
-
-            current_paragraph = paragraphs[-1].strip()
-
-        if current_paragraph:
-            await UniMessage(current_paragraph).finish()
-
-        return
-
-    response = await muice.ask(message_text, userid, image_paths=image_paths)
-    response = response.strip()
-
-    logger.info(f"生成最终回复: {message_text}")
-
-    paragraphs = response.split("\n\n")
-
-    for index, paragraph in enumerate(paragraphs):
-        if not paragraph.strip():
-            continue  # 跳过空白文段
-        if index == len(paragraphs) - 1:
-            await UniMessage(paragraph).finish()
-        await UniMessage(paragraph).send()
 
 
 # @at_event.handle()
@@ -337,3 +250,280 @@ async def handle_supported_adapters(message: UniMsg, event: Event, bot: Bot, sta
 #         if index == len(paragraphs) - 1:
 #             await UniMessage(paragraph).finish()
 #         await UniMessage(paragraph).send()
+
+
+# obsolete
+
+# @at_event.handle()
+# async def handle_supported_adapters(message: UniMsg, event: Event, bot: Bot, state: T_State, matcher: Matcher):
+#     message_text = message.extract_plain_text()
+#     message_images = message.get(Image)
+#     userid = event.get_user_id()
+#     print(matcher)
+#
+#     image_paths = []
+#
+#     if muice.multimodal:
+#         for img in message_images:
+#
+#             if not img.url:
+#                 # 部分 Onebot 适配器实现无法直接获取url，尝试回退至传统获取方式
+#                 logger.warning("无法通过通用方式获取图片URL，回退至传统方式...")
+#                 image_paths = list(set([await legacy_get_images(img.origin, event) for img in message_images]))
+#                 break
+#
+#             image_paths.append(await save_image_as_file(img.url, img.name))
+#
+#     logger.info(f"收到消息: {message_text}")
+#
+#     if not (message_text or image_paths):
+#         return
+#
+#     set_ctx(bot, event, state, matcher)  # 注册上下文信息以供模型调用
+#
+#     if muice.model_config.stream:
+#         current_paragraph = ""
+#
+#         async for chunk in muice.ask_stream(message_text, userid, image_paths=image_paths):
+#             current_paragraph += chunk
+#             logger.debug(f"Stream response: {chunk}")
+#             paragraphs = current_paragraph.split("\n\n")
+#
+#             while len(paragraphs) > 1:
+#                 current_paragraph = paragraphs[0].strip()
+#                 if current_paragraph:
+#                     await UniMessage(current_paragraph).send()
+#                 paragraphs = paragraphs[1:]
+#
+#             current_paragraph = paragraphs[-1].strip()
+#
+#         if current_paragraph:
+#             await UniMessage(current_paragraph).finish()
+#
+#         return
+#
+#     response = await muice.ask(message_text, userid, image_paths=image_paths)
+#     response = response.strip()
+#
+#     logger.info(f"生成最终回复: {message_text}")
+#
+#     paragraphs = response.split("\n\n")
+#
+#     for index, paragraph in enumerate(paragraphs):
+#         if not paragraph.strip():
+#             continue  # 跳过空白文段
+#         if index == len(paragraphs) - 1:
+#             await UniMessage(paragraph).finish()
+#         await UniMessage(paragraph).send()
+#
+#
+# @message_event.handle()
+# async def handle_message_event(message: UniMsg, event: Event, bot: Bot, state: T_State, matcher: Matcher,
+#                                target: MsgTarget):
+#     message_text = message.extract_plain_text()
+#     message_images = message.get(Image)
+#     userid = event.get_user_id()
+#     if not message_text:
+#         return
+#
+#     if target.private:
+#         if not random_reply.private_reply(userid, message_text):
+#             return
+#     else:
+#         group_id = event.group_id
+#         if not random_reply.group_reply(userid, group_id, message_text):
+#             return
+#
+#     image_paths = []
+#
+#     if muice.multimodal:
+#         for img in message_images:
+#
+#             if not img.url:
+#                 # 部分 Onebot 适配器实现无法直接获取url，尝试回退至传统获取方式
+#                 logger.warning("无法通过通用方式获取图片URL，回退至传统方式...")
+#                 image_paths = list(set([await legacy_get_images(img.origin, event) for img in message_images]))
+#                 break
+#
+#             image_paths.append(await save_image_as_file(img.url, img.name))
+#
+#     logger.info(f"收到消息: {message_text}")
+#
+#     if not (message_text or image_paths):
+#         return
+#
+#     set_ctx(bot, event, state, matcher)  # 注册上下文信息以供模型调用
+#
+#     if muice.model_config.stream:
+#         current_paragraph = ""
+#
+#         async for chunk in muice.ask_stream(message_text, userid, image_paths=image_paths):
+#             current_paragraph += chunk
+#             logger.debug(f"Stream response: {chunk}")
+#             paragraphs = current_paragraph.split("\n\n")
+#
+#             while len(paragraphs) > 1:
+#                 current_paragraph = paragraphs[0].strip()
+#                 if current_paragraph:
+#                     await UniMessage(current_paragraph).send()
+#                 paragraphs = paragraphs[1:]
+#
+#             current_paragraph = paragraphs[-1].strip()
+#
+#         if current_paragraph:
+#             await UniMessage(current_paragraph).finish()
+#
+#         return
+#
+#     response = await muice.ask(message_text, userid, image_paths=image_paths)
+#     response = response.strip()
+#
+#     logger.info(f"生成最终回复: {message_text}")
+#
+#     paragraphs = response.split("\n\n")
+#
+#     for index, paragraph in enumerate(paragraphs):
+#         if not paragraph.strip():
+#             continue  # 跳过空白文段
+#         if index == len(paragraphs) - 1:
+#             await UniMessage(paragraph).finish()
+#         await UniMessage(paragraph).send()
+
+
+async def get_image_paths(message_images: List[Image], event: Event) -> List[str]:
+    """统一处理图片路径获取逻辑"""
+    image_paths = []
+    if not muice.multimodal:
+        return image_paths
+
+    # 检查是否需要回退传统方式
+    need_legacy = any(not img.url for img in message_images)
+
+    if need_legacy:
+        logger.warning("检测到图片URL缺失，回退至传统获取方式...")
+        for img in message_images:
+            legacy_path = await legacy_get_images(img.origin, event)
+            if legacy_path:
+                image_paths.append(legacy_path)
+        return list(set(image_paths))
+
+    # 正常处理
+    for img in message_images:
+        image_paths.append(await save_image_as_file(img.url, img.name))
+    return image_paths
+
+
+async def send_paragraphs(content: str, is_final: bool = False):
+    """统一处理段落分割和发送逻辑"""
+    paragraphs = [p.strip() for p in content.split("\n\n") if p.strip()]
+    for idx, para in enumerate(paragraphs):
+        if idx == len(paragraphs) - 1 and is_final:
+            await UniMessage(para).finish()
+        else:
+            await UniMessage(para).send()
+
+
+async def process_core_logic(
+        message_text: str,
+        image_paths: List[str],
+        userid: str,
+        bot: Bot,
+        event: Event,
+        state: T_State,
+        matcher: Matcher
+):
+    """统一处理核心响应逻辑"""
+    if not (message_text or image_paths):
+        return
+
+    logger.info(f"处理消息: {message_text}")
+    set_ctx(bot, event, state, matcher)
+
+    if muice.model_config.stream:
+        current_paragraph = ""
+        async for chunk in muice.ask_stream(message_text, userid, image_paths=image_paths):
+            current_paragraph += chunk
+            logger.debug(f"流式响应: {chunk}")
+
+            if "\n\n" in current_paragraph:
+                parts = current_paragraph.split("\n\n")
+                await send_paragraphs("\n\n".join(parts[:-1]))
+                current_paragraph = parts[-1]
+
+        if current_paragraph:
+            await send_paragraphs(current_paragraph, is_final=True)
+    else:
+        response = (await muice.ask(message_text, userid, image_paths=image_paths)).strip()
+        logger.info(f"最终回复: {response}")
+        await send_paragraphs(response, is_final=True)
+
+
+# 消息处理函数
+@at_event.handle()
+async def handle_supported_adapters(
+        message: UniMsg,
+        event: Event,
+        bot: Bot,
+        state: T_State,
+        matcher: Matcher
+):
+    # 基础信息提取
+    message_text = message.extract_plain_text()
+    message_images = message.get(Image)
+    userid = event.get_user_id()
+
+    # 空消息检查
+    if not message_text:
+        return
+
+    # 处理流程
+    image_paths = await get_image_paths(message_images, event)
+    await process_core_logic(
+        message_text=message_text,
+        image_paths=image_paths,
+        userid=userid,
+        bot=bot,
+        event=event,
+        state=state,
+        matcher=matcher
+    )
+
+
+@message_event.handle()
+async def handle_message_event(
+        message: UniMsg,
+        event: Event,
+        bot: Bot,
+        state: T_State,
+        matcher: Matcher,
+        target: MsgTarget
+):
+    # 基础信息提取
+    message_text = message.extract_plain_text()
+    message_images = message.get(Image)
+    userid = event.get_user_id()
+
+    # 空消息检查
+    if not message_text:
+        return
+
+    # 差异化逻辑：概率回复检查
+    if target.private:
+        if not random_reply.private_reply(userid, message_text):
+            return
+    else:
+        group_id = event.group_id
+        if not random_reply.group_reply(userid, group_id, message_text):
+            return
+
+    # 公共处理流程
+    image_paths = await get_image_paths(message_images, event)
+    await process_core_logic(
+        message_text=message_text,
+        image_paths=image_paths,
+        userid=userid,
+        bot=bot,
+        event=event,
+        state=state,
+        matcher=matcher
+    )

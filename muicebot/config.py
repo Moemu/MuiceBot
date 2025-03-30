@@ -16,12 +16,18 @@ PLUGINS_CONFIG_PATH = Path("configs/plugins.yml").resolve()
 class PluginConfig(BaseModel):
     log_level: str = "INFO"
     """日志等级"""
-    muice_nicknames: list = []
-    """沐雪的自定义昵称，作为消息前缀条件响应信息事件"""
     telegram_proxy: str | None = None
     """telegram代理，这个配置项用于获取图片时使用"""
-    plugins_dir: list = ["./muicebot/plugins", "./muicebot/builtin_plugins"]
-    """自定义插件加载目录"""
+    including_nicknames: list = ["沐雪", "muice", "雪雪", "Muice"]
+    """句中触发词列表"""
+    including_nicknames_trigger_coefficient: float = 0.05
+    """句中触发词触发系数"""
+    beginning_trigger_words: list = ["沐雪", "muice", "雪", "Muice"]
+    """句首触发词列表"""
+    beginning_trigger_coefficient: float = 0.1
+    """句首触发词触发系数"""
+    random_trigger_probability_coefficient: float = 0.01
+    """任意消息触发概率"""
 
 
 plugin_config = get_plugin_config(PluginConfig)
@@ -47,9 +53,6 @@ class Config(BaseModel):
     """configs.yml 中的模型配置"""
     schedule: List[Schedule]
     """调度器配置列表"""
-
-    muice_nicknames: list = plugin_config.muice_nicknames
-    """沐雪的自定义昵称，作为消息前缀条件响应信息事件"""
 
     class Config:
         extra = "allow"
