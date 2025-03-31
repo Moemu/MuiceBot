@@ -1,3 +1,7 @@
+"""
+定义 Function_call 插件的参数类
+"""
+
 from typing import Any
 
 from pydantic import BaseModel, Field

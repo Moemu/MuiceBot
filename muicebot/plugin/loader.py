@@ -1,16 +1,26 @@
-# plugin_manager.py
+"""
+实现插件的加载和管理
+
+Attributes:
+    _plugins (Dict[str, Plugin]): 插件注册表，存储已加载的插件
+Functions:
+    load_plugin: 加载单个插件
+    load_plugins: 加载指定目录下的所有插件
+    get_plugins: 获取已加载的插件列表
+"""
+
 import importlib
 import os
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from nonebot import logger
 
 from .models import Plugin
 from .utils import path_to_module_name
 
-_plugins: List[Dict[str, Plugin]] = []
-"""插件列表"""
+_plugins: Dict[str, Plugin] = {}
+"""插件注册表"""
 
 
 def load_plugin(plugin_path: Path | str) -> Optional[Plugin]:
@@ -27,7 +37,7 @@ def load_plugin(plugin_path: Path | str) -> Optional[Plugin]:
         if plugin.package_name in _plugins:
             ValueError(f"插件 {plugin_path} 包名出现冲突！")
 
-        _plugins.append({plugin.package_name: plugin})
+        _plugins[plugin.package_name] = plugin
 
         return plugin
 
@@ -36,7 +46,7 @@ def load_plugin(plugin_path: Path | str) -> Optional[Plugin]:
         return None
 
 
-def load_plugins(*plugins_dirs: str) -> set[Plugin]:
+def load_plugins(*plugins_dirs: Path | str) -> set[Plugin]:
     """
     加载传入插件目录中的所有插件
     """
@@ -44,7 +54,7 @@ def load_plugins(*plugins_dirs: str) -> set[Plugin]:
     plugins = set()
 
     for plugin_dir in plugins_dirs:
-        plugin_dir_path = Path(plugin_dir)
+        plugin_dir_path = Path(plugin_dir) if isinstance(plugin_dir, str) else plugin_dir
 
         for plugin in os.listdir(plugin_dir_path):
             plugin_path = Path(os.path.join(plugin_dir_path, plugin))
@@ -60,7 +70,7 @@ def load_plugins(*plugins_dirs: str) -> set[Plugin]:
     return plugins
 
 
-def get_plugins() -> List[Dict[str, Plugin]]:
+def get_plugins() -> Dict[str, Plugin]:
     """
     获取插件列表
     """

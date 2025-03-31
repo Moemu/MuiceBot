@@ -89,12 +89,13 @@ SUPERUSERS=["123456789"]
 >
 > 用户 ID 不一定是平台上显示的 ID ，比如 QQ 频道中的用户 ID 就不是 QQ 号。对此我们推荐你使用 `.whoami` 指令获取当前会话 ID ，而最后一段数字就是你的真实用户 ID
 
-## 自定义插件目录
+## 自定义插件目录/启用内嵌插件
 
-从以下目录中加载 Nonebot2 或 Muicebot 插件，默认值如下：
+从以下目录中加载 Nonebot2 或 Muicebot 插件，默认为空列表：
 
 ```dotenv
-PLUGINS_DIR=["./muicebot/plugins", "./muicebot/builtin_plugins"]
+PLUGINS_DIR=["./plugins"]
+ENABLE_BUILTIN_PLUGINS=true
 ```
 
 至此，`NoneBot` 的本身的配置部分到此结束

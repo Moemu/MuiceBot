@@ -18,8 +18,11 @@ class PluginConfig(BaseModel):
     """日志等级"""
     telegram_proxy: str | None = None
     """telegram代理，这个配置项用于获取图片时使用"""
-    plugins_dir: list = ["./muicebot/plugins", "./muicebot/builtin_plugins"]
+    plugins_dir: list = []
     """自定义插件加载目录"""
+    enable_builtin_plugins: bool = True
+    """启用内嵌插件"""
+    
     including_nicknames: list = ["沐雪", "muice", "雪雪", "Muice"]
     """句中触发词列表"""
     including_nicknames_trigger_coefficient: float = 0.05

@@ -1,4 +1,6 @@
+import re
 from typing import List
+from pathlib import Path
 
 from arclet.alconna import Alconna, Args
 from nonebot import get_adapters, get_bot, get_driver, logger, on_message
@@ -46,6 +48,11 @@ async def load_bot():
     logger.info("加载 MuiceBot 插件...")
     for plugin_dir in plugin_config.plugins_dir:
         load_plugins(plugin_dir)
+
+    if plugin_config.enable_builtin_plugins:
+        logger.info("加载 MuiceBot 内嵌插件...")
+        load_plugins(Path(__file__).parent / "builtin_plugins")
+
     logger.success("插件加载完成⭐")
 
     logger.success("MuiceBot 已准备就绪✨")
@@ -171,7 +178,7 @@ async def handle_command_status():
 
     plugins_list = get_plugins()
     if plugins_list:
-        plugin_names = [list(plugin.keys())[0] for plugin in plugins_list]
+        plugin_names = plugins_list.keys()
         plugins_list = "、".join(plugin_names)
     else:
         plugins_list = "暂无已加载的插件"
