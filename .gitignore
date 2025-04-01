@@ -151,6 +151,4 @@ configs.yml
 .vscode
 logs
 configs
-
-muicebot/plugins/*
-!/muicebot/plugins/__init__.py
+plugins

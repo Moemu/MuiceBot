@@ -1,3 +1,7 @@
+"""
+存储并获取 Nonebot 依赖注入中的上下文
+"""
+
 from contextvars import ContextVar
 from typing import Tuple
 

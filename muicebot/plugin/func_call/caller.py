@@ -1,3 +1,13 @@
+"""
+机器人框架中处理函数调用的模块。
+该模块提供了一个系统，用于注册可被AI系统调用的函数，
+具有自动依赖注入和参数验证功能。
+它包括：
+- Caller类：管理函数注册、依赖注入和执行
+- 用于函数调用的注册装饰器
+- 用于获取已注册函数调用的实用函数
+"""
+
 import inspect
 from typing import Any, get_type_hints
 
@@ -39,7 +49,7 @@ class Caller:
         """
         # 确保为异步函数
         if is_coroutine_callable(func):
-            self.function = func
+            self.function = func  # type: ignore
         else:
             self.function = async_wrap(func)  # type:ignore
 

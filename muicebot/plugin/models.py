@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 
 class PluginMetadata(BaseModel):
-    """插件元数据"""
+    """MuiceBot 插件元数据"""
 
     name: str
     """插件名"""
@@ -15,8 +15,8 @@ class PluginMetadata(BaseModel):
     """插件用法"""
     homepage: str | None = None
     """(可选) 插件主页，通常为开源存储库地址"""
-    # config: type[BaseModel] | None = None  # 通过 .env 读取插件配置明显不现实，但兼容性要求我们实现这一部分，好烦啊，以后在搞
-    # """设置"""
+    config: type[BaseModel] | None = None
+    """插件配置项类，如无需配置可不填写"""
     extra: dict[Any, Any] | None = None
     """不知道干嘛的 extra 信息，我至今都没搞懂，喜欢的可以填"""
 
