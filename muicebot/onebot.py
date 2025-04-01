@@ -1,7 +1,7 @@
-import re
 from pathlib import Path
+from typing import List, Tuple
 
-from arclet.alconna import Alconna, AllParam, Args
+from arclet.alconna import Alconna, Args
 from nonebot import get_adapters, get_bot, get_driver, logger, on_message
 from nonebot.adapters import Bot, Event
 from nonebot.matcher import Matcher
@@ -14,9 +14,11 @@ from nonebot_plugin_alconna import (
     Match,
     UniMessage,
     on_alconna,
+    MsgTarget,
 )
 from nonebot_plugin_alconna.uniseg import Image, UniMsg
 
+from muicebot.utils.random_reply import RandomReply
 from .config import plugin_config
 from .muice import Muice
 from .plugin import get_plugins, load_plugins, set_ctx
@@ -26,9 +28,7 @@ from .utils.utils import legacy_get_images, save_image_as_file
 muice = Muice()
 scheduler = None
 
-muice_nicknames = plugin_config.muice_nicknames
-regex_patterns = [f"^{re.escape(nick)}\\s*" for nick in muice_nicknames]
-combined_regex = "|".join(regex_patterns)
+random_reply = RandomReply()
 
 driver = get_driver()
 adapters = get_adapters()
@@ -47,7 +47,6 @@ async def load_bot():
     logger.info("加载 MuiceBot 插件...")
     for plugin_dir in plugin_config.plugins_dir:
         load_plugins(plugin_dir)
-
     if plugin_config.enable_builtin_plugins:
         logger.info("加载 MuiceBot 内嵌插件...")
         load_plugins(Path(__file__).parent / "builtin_plugins")
@@ -58,7 +57,7 @@ async def load_bot():
 
 
 @driver.on_bot_connect
-async def bot_conncted():
+async def bot_connected():
     logger.success("Bot 已连接，消息处理进程开始运行✨")
 
 
@@ -123,13 +122,9 @@ command_whoami = on_alconna(
     block=True,
 )
 
-nickname_event = on_alconna(
-    Alconna(re.compile(combined_regex), Args["text?", AllParam], separators=""),
-    priority=99,
-    block=True,
-)
+message_event = on_message(priority=100, block=True)
 
-at_event = on_message(priority=100, rule=to_me(), block=True)
+at_event = on_message(priority=99, rule=to_me(), block=True)
 
 
 @driver.on_bot_connect
@@ -258,16 +253,33 @@ async def handle_command_whoami(event: Event):
 
 
 @command_start.handle()
-async def handle_command_strt():
+async def handle_command_start():
     pass
 
 
-@at_event.handle()
-@nickname_event.handle()
-async def handle_supported_adapters(message: UniMsg, event: Event, bot: Bot, state: T_State, matcher: Matcher):
+@message_event.handle()
+async def handle_message_event(
+        message: UniMsg,
+        event: Event,
+        bot: Bot,
+        state: T_State,
+        matcher: Matcher,
+        target: MsgTarget
+):
     message_text = message.extract_plain_text()
     message_images = message.get(Image)
     userid = event.get_user_id()
+
+    if plugin_config.is_random_reply:
+        if target.private:
+            if not random_reply.private_reply(userid, message_text):
+                return
+        else:
+            group_id = event.group_id or -1
+            if not message_text:
+                return
+            if not random_reply.group_reply(userid, group_id, message_text):
+                return
 
     image_paths = []
 
@@ -288,12 +300,70 @@ async def handle_supported_adapters(message: UniMsg, event: Event, bot: Bot, sta
         return
 
     set_ctx(bot, event, state, matcher)  # 注册上下文信息以供模型调用
+    ctx = (bot, event, state, matcher)
+    await get_response(message_text, userid, image_paths, ctx)
 
+
+@at_event.handle()
+async def handle_at_event(
+        message: UniMsg,
+        event: Event,
+        bot: Bot,
+        state: T_State,
+        matcher: Matcher
+):
+    message_text = message.extract_plain_text()
+    message_images = message.get(Image)
+    userid = event.get_user_id()
+    group_id = event.group_id or -1
+
+    if plugin_config.is_random_reply:
+        if not random_reply.at_reply(userid, group_id, message_text):
+            return
+
+    image_paths = []
+
+    if muice.multimodal:
+        for img in message_images:
+
+            if not img.url:
+                # 部分 Onebot 适配器实现无法直接获取url，尝试回退至传统获取方式
+                logger.warning("无法通过通用方式获取图片URL，回退至传统方式...")
+                image_paths = list(set([await legacy_get_images(img.origin, event) for img in message_images]))
+                break
+
+            image_paths.append(await save_image_as_file(img.url, img.name))
+
+    logger.info(f"收到消息: {message_text}")
+
+    if not (message_text or image_paths):
+        return
+
+    set_ctx(bot, event, state, matcher)  # 注册上下文信息以供模型调用
+    ctx = (bot, event, state, matcher)
+    await get_response(message_text, userid, image_paths, ctx)
+
+
+async def get_response(
+        message_text: str = None,
+        userid: str = None,
+        image_paths: List[str] = None,
+        ctx: Tuple[Bot, Event, T_State, Matcher] = None
+):
+    """
+    统一处理响应逻辑，支持流式和非流式响应。
+    :param message_text: 用户输入的消息文本
+    :param userid: 用户ID
+    :param image_paths: 图片路径列表（用于流式响应）
+    :param ctx: 用于注册上下文
+    """
+    set_ctx(*ctx)  # 注册上下文信息以供模型调用
     if muice.model_config.stream:
         current_paragraph = ""
 
         async for chunk in muice.ask_stream(message_text, userid, image_paths=image_paths):
             current_paragraph += chunk
+            logger.debug(f"Stream response: {chunk}")
             paragraphs = current_paragraph.split("\n\n")
 
             while len(paragraphs) > 1:
@@ -322,24 +392,3 @@ async def handle_supported_adapters(message: UniMsg, event: Event, bot: Bot, sta
         if index == len(paragraphs) - 1:
             await UniMessage(paragraph).finish()
         await UniMessage(paragraph).send()
-
-
-# @at_event.handle()
-# @nickname_event.handle()
-# async def handle_universal_adapters(event: Event):
-#     message = event.get_plaintext()
-#     user_id = event.get_user_id()
-#     logger.info(f"Received a message: {message}")
-
-#     if not message:
-#         return
-
-#     response = await muice.ask(message, user_id)
-#     response.strip()
-
-#     paragraphs = response.split("\n")
-
-#     for index, paragraph in enumerate(paragraphs):
-#         if index == len(paragraphs) - 1:
-#             await UniMessage(paragraph).finish()
-#         await UniMessage(paragraph).send()
