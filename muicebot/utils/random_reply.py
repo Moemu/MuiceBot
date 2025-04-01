@@ -2,7 +2,7 @@ from datetime import datetime
 from random import random
 from re import split
 
-from muicebot.config import plugin_config
+from muicebot.config import RandomReplyConfig
 
 
 def time_to_minutes(time_str):
@@ -13,20 +13,21 @@ def time_to_minutes(time_str):
 
 class RandomReply:
     def __init__(self) -> None:
+        config = RandomReplyConfig.load_config()
         # 活跃时间相关配置项
-        self.unactive_coefficient: float = plugin_config.unactive_coefficient
-        self.active_coefficient: float = plugin_config.active_coefficient
-        self.time_ranges: list = plugin_config.active_time_ranges
+        self.unactive_coefficient: float = config.unactive_coefficient
+        self.active_coefficient: float = config.active_coefficient
+        self.time_ranges: list = config.active_time_ranges
 
         self.private_last_message: dict = {}
 
         # 群组相关配置项
         self.group_last_message: dict = {}
-        self.including_words: list = plugin_config.including_nicknames
-        self.including_trigger_coefficient: float = plugin_config.including_nicknames_trigger_coefficient
-        self.beginning_trigger_words: list = plugin_config.beginning_trigger_words
-        self.beginning_trigger_coefficient: float = plugin_config.beginning_trigger_coefficient
-        self.random_trigger_probability_coefficient: float = plugin_config.random_trigger_probability_coefficient
+        self.including_words: list = config.including_nicknames
+        self.including_trigger_coefficient: float = config.including_nicknames_trigger_coefficient
+        self.beginning_trigger_words: list = config.beginning_trigger_words
+        self.beginning_trigger_coefficient: float = config.beginning_trigger_coefficient
+        self.random_trigger_probability_coefficient: float = config.random_trigger_probability_coefficient
 
         self.user_coefficient: dict = {}  # 用户亲密度相关系数
 

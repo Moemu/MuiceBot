@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, ClassVar
 
 import yaml as yaml_
 from nonebot import get_plugin_config
@@ -20,22 +20,8 @@ class PluginConfig(BaseModel):
     """telegram代理，这个配置项用于获取图片时使用"""
     plugins_dir: list = ["./muicebot/plugins", "./muicebot/builtin_plugins"]
     """自定义插件加载目录"""
-    including_nicknames: list = ["沐雪", "muice", "雪雪", "Muice"]
-    """句中触发词列表"""
-    including_nicknames_trigger_coefficient: float = 0.05
-    """句中触发词触发系数"""
-    beginning_trigger_words: list = ["沐雪", "muice", "雪", "Muice"]
-    """句首触发词列表"""
-    beginning_trigger_coefficient: float = 0.1
-    """句首触发词触发系数"""
-    random_trigger_probability_coefficient: float = 0.01
-    """任意消息触发概率"""
-    active_time_ranges: list = [("22:00", "02:00"), ("09:00", "18:00")]
-    """活跃时间段"""
-    active_coefficient: float = 1
-    """活跃时间段系数"""
-    unactive_coefficient: float = 0.5
-    """非活跃时间段系数"""
+    is_random_reply: bool = False
+    """是否开启随机回复(实验性选项)"""
 
 
 plugin_config = get_plugin_config(PluginConfig)
@@ -54,6 +40,41 @@ class Schedule(BaseModel):
     """调度器参数"""
     target: dict
     """指定发送信息的目标用户/群聊"""
+
+
+class RandomReplyConfig(BaseModel):
+    RANDOM_REPLY_CONFIG_PATH: ClassVar[Path] = Path("configs/random_reply.yml").resolve()
+
+    including_nicknames: list = ["沐雪", "muice", "雪雪", "Muice"]
+    """句中触发词列表"""
+    including_nicknames_trigger_coefficient: float = 0.05
+    """句中触发词触发系数"""
+    beginning_trigger_words: list = ["沐雪", "muice", "雪", "Muice"]
+    """句首触发词列表"""
+    beginning_trigger_coefficient: float = 0.1
+    """句首触发词触发系数"""
+    random_trigger_probability_coefficient: float = 0.01
+    """任意消息触发概率"""
+    active_time_ranges: list = [("22:00", "02:00"), ("09:00", "18:00")]
+    """活跃时间段"""
+    active_coefficient: float = 1
+    """活跃时间段系数"""
+    unactive_coefficient: float = 0.5
+    """非活跃时间段系数"""
+
+    @classmethod
+    def load_config(cls) -> 'RandomReplyConfig':
+        """
+        从 YAML 配置文件加载配置并返回初始化后的 RandomReplyConfig 实例
+
+        Returns:
+            RandomReplyConfig: 初始化后的配置实例
+        """
+        if not cls.RANDOM_REPLY_CONFIG_PATH.exists():
+            return cls()
+        with open(cls.RANDOM_REPLY_CONFIG_PATH, 'r', encoding='utf-8') as f:
+            config_data = yaml_.safe_load(f) or {}
+        return cls(**config_data)
 
 
 class Config(BaseModel):
@@ -122,3 +143,4 @@ def get_model_config(model_config_name: Optional[str] = None) -> ModelConfig:
     model_config = ModelConfig(**model_config)
 
     return model_config
+
