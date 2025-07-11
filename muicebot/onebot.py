@@ -35,7 +35,7 @@ from nonebot_plugin_alconna.uniseg import UniMsg
 from nonebot_plugin_orm import async_scoped_session
 from nonebot_plugin_session import SessionIdType, extract_session
 
-from .config import plugin_config
+from .config import load_embedding_model_config, plugin_config
 from .llm import ModelCompletions, ModelStreamCompletions
 from .models import Message, Resource
 from .muice import Muice
@@ -86,11 +86,12 @@ async def load_bot():
     logger.info("初始化 Muice 实例...")
     muice = Muice.get_instance()
 
-    logger.info(f"加载模型适配器: {muice.model_loader} ...")
+    logger.info(f"加载模型适配器: {muice.model_provider} ...")
     if not muice.load_model():
         logger.error("模型加载失败，请检查配置项是否正确")
         exit(1)
-    logger.success(f"模型适配器加载成功: {muice.model_loader} ⭐")
+    load_embedding_model_config()
+    logger.success(f"模型适配器加载成功: {muice.model_provider} ⭐")
 
     # if PLUGINS_PATH.exists():
     #     logger.info("加载外部插件...")
@@ -249,7 +250,7 @@ async def handle_command_help():
 async def handle_command_about():
     muice = Muice.get_instance()
 
-    model_loader = muice.model_loader
+    model_loader = muice.model_provider
     # plugins_list = ", ".join(get_available_plugin_names())
     mplugins_list = ", ".join(get_plugins())
 

@@ -21,3 +21,10 @@ class User(Model):
     userid: Mapped[str] = mapped_column(String, nullable=False)
     nickname: Mapped[str] = mapped_column(String, nullable=True, default="_default")
     profile: Mapped[str] = mapped_column(String, nullable=True, default="_default")
+
+
+class Usage(Model):
+    plugin: Mapped[str] = mapped_column(String, primary_key=True)
+    type: Mapped[str] = mapped_column(String, nullable=False)
+    date: Mapped[str] = mapped_column(String, nullable=False)
+    tokens: Mapped[int] = mapped_column(Integer, nullable=True, default=0)

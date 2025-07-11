@@ -1,12 +1,17 @@
 from importlib.util import find_spec
 from typing import Any, List, Literal, Optional
+from warnings import warn
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 
 class ModelConfig(BaseModel):
-    loader: str = ""
-    """所使用加载器的名称，位于 llm 文件夹下，loader 开头必须大写"""
+    provider: str
+    """所使用模型提供者的名称，位于 llm/providers 下"""
+    loader: Optional[str] = None
+    """[弃用] 所使用加载器的名称，位于 llm 文件夹下，loader 开头必须大写"""
+    default: bool = False
+    """是否默认启用"""
 
     template: Optional[str] = "Muice"
     """使用的人设模板名称"""
@@ -64,19 +69,77 @@ class ModelConfig(BaseModel):
     audio: Optional[Any] = None
     """多模态音频参数"""
 
-    @field_validator("loader")
+    @field_validator("provider")
     @classmethod
-    def check_model_loader(cls, loader: str) -> str:
-        if not loader:
-            raise ValueError("loader is required")
+    def check_model_loader(cls, provider: str) -> str:
+        if not provider:
+            raise ValueError("provider is required")
 
-        loader = loader.lower()
+        provider = provider.lower()
 
         # Check if the specified loader exists
-        module_path = f"muicebot.llm.providers.{loader}"
+        module_path = f"muicebot.llm.providers.{provider}"
 
         # 使用 find_spec 仅检测模块是否存在，不实际导入
         if find_spec(module_path) is None:
-            raise ValueError(f"指定的模型加载器 '{loader}' 不存在于 llm 目录中")
+            raise ValueError(f"指定的模型加载器 '{provider}' 不存在于 llm 目录中")
 
-        return loader
+        return provider
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_old_field(cls, values: dict):
+        if "provider" not in values and "loader" in values:
+            values["provider"] = values["loader"]
+            warn("配置文件中的 'loader' 字段已弃用，请使用 'provider' 字段。", DeprecationWarning)
+        return values
+
+
+class EmbeddingConfig(BaseModel):
+    provider: str
+    """所使用模型提供者的名称，位于 llm/embedding 下"""
+    default: bool = False
+    """是否默认启用"""
+
+    model: str = "text-embedding-v4"
+    """嵌入模型名称"""
+
+    api_key: str = ""
+    """在线服务的 API KEY"""
+    api_secret: str = ""
+    """在线服务的 api secret """
+    api_host: str = ""
+    """自定义 API 地址"""
+
+    # binding_model_config: Optional[str] = None
+    # """
+    # 绑定的模型配置。如果切换模型，会查找该模型所绑定的嵌入配置。如果不指定绑定配置，则不切换。
+    # 对于绝大多数任务，使用一个通用的嵌入配置即可
+    # """
+    # 未知该配置项的实用性，先注释掉
+
+    def __hash__(self) -> int:
+        return hash(self.provider + self.model + self.api_host)
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, EmbeddingConfig):
+            return NotImplemented
+
+        return self.provider == other.provider and self.model == other.model and self.api_host == other.api_host
+
+    @field_validator("provider")
+    @classmethod
+    def check_model_loader(cls, provider: str) -> str:
+        if not provider:
+            raise ValueError("provider is required")
+
+        provider = provider.lower()
+
+        # Check if the specified loader exists
+        module_path = f"muicebot.llm.embeddings.{provider}"
+
+        # 使用 find_spec 仅检测模块是否存在，不实际导入
+        if find_spec(module_path) is None:
+            raise ValueError(f"指定的模型加载器 '{provider}' 不存在于 llm 目录中")
+
+        return provider

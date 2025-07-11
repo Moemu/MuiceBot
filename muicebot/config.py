@@ -12,13 +12,16 @@ from nonebot import get_plugin_config, logger
 from pydantic import BaseModel
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
+from watchdog.observers.api import BaseObserver
 
-from .llm import ModelConfig
+from .llm import EmbeddingConfig, ModelConfig
 
 MODELS_CONFIG_PATH = Path("configs/models.yml").resolve()
 SCHEDULES_CONFIG_PATH = Path("configs/schedules.yml").resolve()
+EMBEDDINGS_CONFIG_PATH = Path("configs/embeddings.yml").resolve()
 
 _model_config_manager: Optional["ModelConfigManager"] = None
+_embeddings_configs: dict[str, EmbeddingConfig] = {}
 
 
 class PluginConfig(BaseModel):
@@ -36,10 +39,12 @@ class PluginConfig(BaseModel):
     """启用的 Nonebot 适配器"""
     input_timeout: int = 0
     """输入等待时间"""
-    default_template: Optional[str] = None
+    default_template: Optional[str] = "Muice"
     """默认使用人设模板名称"""
     thought_process_mode: Literal[0, 1, 2] = 2
     """针对 Deepseek-R1 等思考模型的思考过程提取模式"""
+    enable_embedding_cache: bool = True
+    """启用嵌入缓存"""
 
 
 plugin_config = get_plugin_config(PluginConfig)
@@ -126,12 +131,18 @@ class ModelConfigManager:
         if self._initialized:
             return
 
-        self.configs = {}
+        self.configs: dict[str, ModelConfig] = {}
+        """所有模型配置"""
         self.default_config = None
-        self.observer = None
-        self.listeners: List[Callable] = []  # 注册的监听器列表
+        """默认模型配置"""
+        self.observer: Optional[BaseObserver] = None
+        """文件监视器"""
+        self._listeners: List[Callable] = []
+        """监听器列表"""
+
         self._load_configs()
         self._start_file_watcher()
+
         self._initialized = True
 
     def _load_configs(self):
@@ -176,7 +187,7 @@ class ModelConfigManager:
             self._load_configs()
 
             # 通知所有注册的监听器
-            for listener in self.listeners:
+            for listener in self._listeners:
                 listener(self.default_config, old_default)
 
         except Exception as e:
@@ -188,13 +199,13 @@ class ModelConfigManager:
 
         :param listener: 回调函数，接收两个参数：新的默认配置和旧的默认配置
         """
-        if listener not in self.listeners:
-            self.listeners.append(listener)
+        if listener not in self._listeners:
+            self._listeners.append(listener)
 
     def unregister_listener(self, listener: Callable):
         """取消注册配置变化监听器"""
-        if listener in self.listeners:
-            self.listeners.remove(listener)
+        if listener in self._listeners:
+            self._listeners.remove(listener)
 
     def get_model_config(self, model_config_name: Optional[str] = None) -> ModelConfig:
         """获取指定模型的配置"""
@@ -229,10 +240,58 @@ def get_model_config_manager() -> ModelConfigManager:
 
 def get_model_config(model_config_name: Optional[str] = None) -> ModelConfig:
     """
-    从配置文件 `configs/models.yml` 中获取指定模型的配置文件
+    从配置文件 `configs/models.yml` 中获取指定模型的配置对象
 
-    :model_config_name: (可选)模型配置名称。若为空，则先寻找配置了 `default: true` 的首个配置项，若失败就再寻找首个配置项
-    若都不存在，则抛出 `FileNotFoundError`
+    :param model_config_name: (可选)模型配置名称。若为空，则先寻找配置了 `default: true` 的首个配置项，若失败就再寻找首个配置项
+
+    :raise FileNotFoundError: 配置文件不存在
     """
     model_config_manager = get_model_config_manager()
     return model_config_manager.get_model_config(model_config_name)
+
+
+def get_embedding_model_config(embedding_config_name: Optional[str] = None) -> EmbeddingConfig:
+    """
+    从配置文件 `configs/models.yml` 中获取指定模型的配置对象
+
+    :param embedding_config_name: (可选)模型配置名称。若为空，则先寻找配置了 `default: true` 的首个配置项，若失败就再寻找首个配置项
+
+    :raise FileNotFoundError: 嵌入配置文件 `configs/embeddings.yml` 不存在或为空
+    :raise ValueError: 指定的嵌入模型配置名不存在
+    """
+    if not _embeddings_configs:
+        raise FileNotFoundError("嵌入配置文件 `configs/embeddings.yml` 不存在或为空")
+
+    if not embedding_config_name:
+        for config in _embeddings_configs.values():
+            if config.default:
+                return config
+
+        return next(iter(_embeddings_configs.values()))
+
+    embeddings_config = _embeddings_configs.get(embedding_config_name, None)
+
+    if embeddings_config:
+        return embeddings_config
+
+    raise ValueError(f"指定的嵌入模型配置名: {embedding_config_name} 不存在")
+
+
+def load_embedding_model_config():
+    global _embeddings_configs
+
+    if not os.path.isfile(EMBEDDINGS_CONFIG_PATH):
+        _embeddings_configs = {}
+        return
+
+    with open(EMBEDDINGS_CONFIG_PATH, "r", encoding="utf-8") as f:
+        configs = yaml_.safe_load(f)
+
+    if not configs:
+        _embeddings_configs = {}
+        return
+
+    _embeddings_configs = {}
+
+    for name, config in configs.items():
+        _embeddings_configs[name] = EmbeddingConfig(**config)

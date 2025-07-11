@@ -96,6 +96,7 @@ def load_plugins(*plugins_dirs: Path | str, base_path=Path.cwd()) -> set[Plugin]
 def _get_caller_plugin_name() -> Optional[str]:
     """
     获取当前调用插件名
+    （默认跳过 `muicebot` 本身及其内嵌插件）
     """
     current_frame = inspect.currentframe()
     if current_frame is None:

@@ -42,7 +42,7 @@ async def get_plugin_commit(plugin: str) -> str:
     process = await asyncio.create_subprocess_exec(
         "git",
         "log",
-        '--pretty=format:"%h"',
+        "--pretty=format:%h",
         "-1",
         cwd=plugin_path,
         stdout=asyncio.subprocess.PIPE,
@@ -212,3 +212,20 @@ async def uninstall_plugin(plugin: str) -> str:
         return f"⚠️ 插件 {plugin} 虽然已从加载列表中移除，但其文件移除失败，请尝试手动删除此插件"
 
     return f"✅ 插件 {plugin} 移除成功！重启后生效"
+
+
+async def list_all_available_plugins() -> str:
+    """
+    列出所有可用插件
+    """
+    if not (index := await get_index()):
+        return "❌ 无法获取插件索引文件，请检查控制台日志"
+
+    available_plugins = []
+    for plugin, info in index.items():
+        available_plugins.append(f"{plugin}: {info['description']}")
+
+    if not available_plugins:
+        return "❌ 当前没有可用的插件"
+
+    return "\n".join(available_plugins)

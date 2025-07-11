@@ -7,6 +7,7 @@ from muicebot.plugin import PluginMetadata
 from .store import (
     get_installed_plugins_info,
     install_plugin,
+    list_all_available_plugins,
     load_store_plugin,
     uninstall_plugin,
     update_plugin,
@@ -44,6 +45,12 @@ async def install(name: Match[str]):
     await store_cmd.finish(result)
 
 
+@store_cmd.assign("list")
+async def list():
+    info = await list_all_available_plugins()
+    await store_cmd.finish(info)
+
+
 @store_cmd.assign("show")
 async def show():
     info = await get_installed_plugins_info()
@@ -70,7 +77,8 @@ async def uninstall(name: Match[str]):
 async def store_help():
     await store_cmd.finish(
         "install <插件名> 安装插件\n"
+        "list 列出所有可用插件\n"
         "show 查看已安装的商店插件信息\n"
         "update <插件名> 更新插件\n"
-        "uninstall <插件名> 卸载插件"
+        "uninstall <插件名> 卸载插件\n"
     )

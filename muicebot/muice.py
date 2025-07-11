@@ -77,7 +77,7 @@ class Muice:
         """
         加载配置项
         """
-        self.model_loader = self.model_config.loader
+        self.model_provider = self.model_config.provider
         self.multimodal = self.model_config.multimodal
         self.template = self.model_config.template
         self.template_mode = self.model_config.template_mode
@@ -92,8 +92,8 @@ class Muice:
         except (ImportError, ModuleNotFoundError) as e:
             import sys
 
-            logger.critical(f"导入模型加载器 '{self.model_loader}' 失败：{e}")
-            dependencies = MODEL_DEPENDENCY_MAP.get(self.model_loader, [])
+            logger.critical(f"导入模型加载器 '{self.model_provider}' 失败：{e}")
+            dependencies = MODEL_DEPENDENCY_MAP.get(self.model_provider, [])
             missing = get_missing_dependencies(dependencies)
             if missing:
                 install_command = "pip install " + " ".join(missing)
@@ -122,7 +122,7 @@ class Muice:
         self._load_config()
         self._init_model()
         self.load_model()
-        logger.success(f"模型自动重载完成: {old_config.loader} -> {new_config.loader}")
+        logger.success(f"模型自动重载完成: {old_config.provider} -> {new_config.provider}")
 
     def change_model_config(self, config_name: str) -> str:
         """
