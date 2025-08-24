@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 from nonebot import logger
 
-from .config import server_config
+from .config import get_mcp_server_config
 from .server import Server, Tool
 
 _servers: list[Server] = list()
@@ -13,6 +13,7 @@ async def initialize_servers() -> None:
     """
     初始化全部 MCP 实例
     """
+    server_config = get_mcp_server_config()
     _servers.extend([Server(name, srv_config) for name, srv_config in server_config.items()])
     for server in _servers:
         logger.info(f"初始化 MCP Server: {server.name}")

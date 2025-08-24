@@ -44,7 +44,7 @@ Muicebot 内置两个分别名为沐雪和沐妮卡的聊天人设（人设是�
 
 ✅ 使用 Jinja2 动态生成人设提示词
 
-✅ 支持调用 MCP 服务
+✅ 支持调用 MCP 服务（支持 stdio、SSE 和 Streamable HTTP 传输方式）
 
 # 模型加载器适配情况
 
