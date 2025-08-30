@@ -128,32 +128,26 @@ class Muice:
         self.load_model()
         logger.success(f"模型自动重载完成: {old_config_name} -> {self.model_config_name}")
 
-    def change_model_config(self, config_name: Optional[str] = None, reload: bool = False) -> str:
+    def change_model_config(self, config_name: Optional[str] = None, reload: bool = False) -> None:
         """
         更换模型配置文件并重新加载模型
 
         :param config_name: 模型配置名称
         :param reload: 是否处于重载状态（`config_name` 此时应该为空）
 
-        :return: 切换状态提示
+        :raise FileNotFoundError: 配置文件不存在
+        :raise ValueError: 当给定配置对象不存在时
         """
         if reload and not config_name:
             config_name = self.model_config_name
+            self._model_config_manager._load_configs()  # 重新加载配置文件
 
-        try:
-            self.model_config = get_model_config(config_name)
-            self.model_config_name = self._model_config_manager.get_name_from_config(self.model_config)
-        except (ValueError, FileNotFoundError) as e:
-            return str(e)
+        self.model_config = get_model_config(config_name)
+        self.model_config_name = self._model_config_manager.get_name_from_config(self.model_config)
 
         self._load_config()
         self._init_model()
         self.load_model()
-
-        if reload:
-            return f"已成功重载模型配置文件: {config_name}"
-
-        return f"已成功加载 {config_name}" if config_name else "未指定模型配置名，已加载默认模型配置"
 
     async def _prepare_prompt(self, message: str, userid: str, is_private: bool) -> str:
         """

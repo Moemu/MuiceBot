@@ -349,8 +349,17 @@ async def handle_command_undo(event: Event, session: async_scoped_session):
 async def handle_command_load(config: Match[str] = AlconnaMatch("config_name")):
     muice = Muice.get_instance()
     config_name = config.result
-    result = muice.change_model_config(config_name)
-    await UniMessage(result).finish()
+
+    try:
+        muice.change_model_config(reload=True)
+    except (ValueError, FileNotFoundError) as e:
+        await UniMessage(str(e)).finish()
+
+    await UniMessage(
+        f"已成功加载 {config_name}"
+        if config_name
+        else f"未指定模型配置名，已加载默认模型配置: {muice.model_config_name}"
+    ).finish()
 
 
 @command_whoami.handle()
@@ -376,8 +385,15 @@ async def handle_command_profile(
 
 @command_reload.handle()
 async def handle_command_reload():
-    result = Muice.get_instance().change_model_config(reload=True)
-    await UniMessage(result).finish()
+    logger.info("重新加载模型配置文件...")
+    muice = Muice.get_instance()
+
+    try:
+        muice.change_model_config(reload=True)
+    except (ValueError, FileNotFoundError) as e:
+        await UniMessage(str(e)).finish()
+
+    await UniMessage(f"已成功重载模型配置文件: {muice.model_config_name}").finish()
 
 
 @command_start.handle()
