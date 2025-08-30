@@ -5,6 +5,8 @@ from typing import AsyncGenerator, Optional, Union
 from nonebot import logger
 from nonebot_plugin_orm import async_scoped_session
 
+from .agent import get_agent_list
+from .agent.communication import AgentCommunication
 from .config import (
     ModelConfig,
     get_model_config,
@@ -60,6 +62,9 @@ class Muice:
         self._init_model()
 
         self._model_config_manager.register_listener(self._on_config_changed)
+
+        # 初始化Agent通信接口
+        self.agent_comm = AgentCommunication.get_instance()
 
         self._initialized = True
 
@@ -126,6 +131,10 @@ class Muice:
         self._load_config()
         self._init_model()
         self.load_model()
+
+        # 重新加载Agent配置
+        self.agent_comm.reload_configs()
+
         logger.success(f"模型自动重载完成: {old_config_name} -> {self.model_config_name}")
 
     def change_model_config(self, config_name: Optional[str] = None, reload: bool = False) -> str:
@@ -252,7 +261,7 @@ class Muice:
             else []
         )
         tools = (
-            (await get_function_list() + await get_mcp_list())
+            (await get_function_list() + await get_agent_list() + await get_mcp_list())
             if self.model_config.function_call and enable_plugins
             else []
         )
@@ -321,7 +330,7 @@ class Muice:
             else []
         )
         tools = (
-            (await get_function_list() + await get_mcp_list())
+            (await get_function_list() + await get_agent_list() + await get_mcp_list())
             if self.model_config.function_call and enable_plugins
             else []
         )

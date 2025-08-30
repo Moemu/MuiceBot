@@ -85,13 +85,19 @@ async def transform_json(tool: Tool) -> dict[str, Any]:
     return output
 
 
-async def get_mcp_list() -> list[dict[str, dict]]:
+async def get_mcp_list(server_names: Optional[list[str]] = None) -> list[dict[str, dict]]:
     """
     获得适用于 OpenAI Tool Call 输入格式的 MCP 工具列表
+
+    Args:
+        server_names: 服务器名称列表，默认为 None，表示获取所有服务器的工具
     """
     all_tools: list[dict[str, dict]] = []
+    target_servers = (
+        [server for server in _servers if server.name in server_names] if server_names is not None else _servers
+    )
 
-    for server in _servers:
+    for server in target_servers:
         tools = await server.list_tools()
         all_tools.extend([await transform_json(tool) for tool in tools])
 
