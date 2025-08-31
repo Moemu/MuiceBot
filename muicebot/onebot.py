@@ -25,6 +25,7 @@ from nonebot_plugin_alconna import (
     CommandMeta,
     Match,
     MsgTarget,
+    Subcommand,
     UniMessage,
     get_message_id,
     on_alconna,
@@ -206,6 +207,22 @@ command_reload = on_alconna(
     permission=SUPERUSER,
 )
 
+command_model = on_alconna(
+    Alconna(
+        COMMAND_PREFIXES,
+        "model",
+        Subcommand("help", help_text="显示指令帮助"),
+        Subcommand("load", Args["config_name?", str], help_text="切换指定模型配置，用法: .model load <config_name> "),
+        Subcommand("reload", help_text="重新加载模型配置文件"),
+        Subcommand("list", help_text="列出所有可用模型配置"),
+        meta=CommandMeta("Muicebot 模型配置管理指令"),
+    ),
+    priority=10,
+    block=True,
+    skip_for_unmatch=False,
+    permission=SUPERUSER,
+)
+
 
 nickname_event = on_alconna(
     Alconna(re.compile(combined_regex), Args["text?", AllParam], separators=""),
@@ -345,23 +362,6 @@ async def handle_command_undo(event: Event, session: async_scoped_session):
     await command_undo.finish(response)
 
 
-@command_load.handle()
-async def handle_command_load(config: Match[str] = AlconnaMatch("config_name")):
-    muice = Muice.get_instance()
-    config_name = config.result
-
-    try:
-        muice.change_model_config(reload=True)
-    except (ValueError, FileNotFoundError) as e:
-        await UniMessage(str(e)).finish()
-
-    await UniMessage(
-        f"已成功加载 {config_name}"
-        if config_name
-        else f"未指定模型配置名，已加载默认模型配置: {muice.model_config_name}"
-    ).finish()
-
-
 @command_whoami.handle()
 async def handle_command_whoami(bot: Bot, event: Event):
     user_id = event.get_user_id()
@@ -383,8 +383,21 @@ async def handle_command_profile(
     await UniMessage("成功切换消息存档~").finish()
 
 
+@command_model.assign("help")
+async def handle_model_help():
+    await UniMessage(
+        """Model 命令指南:
+    - help: 显示此帮助信息
+    - load <config_name>: 加载模型配置
+    - reload: 重新加载模型配置文件
+    - list: 列出所有可用的模型配置
+    """
+    ).finish()
+
+
 @command_reload.handle()
-async def handle_command_reload():
+@command_model.assign("reload")
+async def handle_model_reload():
     logger.info("重新加载模型配置文件...")
     muice = Muice.get_instance()
 
@@ -394,6 +407,38 @@ async def handle_command_reload():
         await UniMessage(str(e)).finish()
 
     await UniMessage(f"已成功重载模型配置文件: {muice.model_config_name}").finish()
+
+
+@command_load.handle()
+@command_model.assign("load")
+async def handle_model_load(config: Match[str] = AlconnaMatch("config_name")):
+    muice = Muice.get_instance()
+    config_name = config.result if config.available else None
+
+    try:
+        muice.change_model_config(config_name)
+    except (ValueError, FileNotFoundError) as e:
+        await UniMessage(str(e)).finish()
+
+    await UniMessage(
+        f"已成功加载 {config_name}"
+        if config_name
+        else f"未指定模型配置名，已加载默认模型配置: {muice.model_config_name}"
+    ).finish()
+
+
+@command_model.assign("list")
+async def handle_model_list():
+    from .config import ModelConfigManager
+
+    config_manager = ModelConfigManager()
+    configs = config_manager.configs
+    outputs = ["目前所有可用的模型配置列表:"]
+
+    for name, config in configs.items():
+        outputs.append(f"-{name} {config.model_name}({config.provider}) 多模态: {'是' if config.multimodal else '否'}")
+
+    await UniMessage("\n".join(outputs)).finish()
 
 
 @command_start.handle()
