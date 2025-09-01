@@ -33,6 +33,6 @@ repos:
         args: ["--profile", "black"]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0  # 版本号
+    rev: v6.0.0  # 版本号
     hooks:
       - id: trailing-whitespace  # 删除行尾空格
