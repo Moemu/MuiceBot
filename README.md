@@ -13,13 +13,14 @@
 <div align=center>
   <a href="#"><img src="https://wakatime.com/badge/user/637d5886-8b47-4b82-9264-3b3b9d6add67/project/a4557f7b-4d26-4105-842a-7a783cbad588.svg" alt="wakatime"></a>
   <a href="https://www.modelscope.cn/datasets/Moemuu/Muice-Dataset"><img src="https://img.shields.io/badge/ModelScope-Dataset-644cfd?link=https://www.modelscope.cn/datasets/Moemuu/Muice-Dataset" alt="ModelScope"></a>
-  <a href='https://qm.qq.com/q/Q5rVU7wlag'><img src="https://img.shields.io/badge/QQ群-MuiceHouse-blue" alt="QQ群组"></a>
 </div>
 <div align=center>
   <a href="https://bot.snowy.moe">📃使用文档</a>
   <a href="https://bot.snowy.moe/guide/setup.html">✨快速开始</a>
   <a href="https://github.com/MuikaAI/Muicebot-Plugins-Index">🧩插件商店</a>
 </div>
+
+感谢各位一直以来对沐雪的关注和支持，沐雪全系项目已于 2025.09.10 全面停止更新，如果还有机会的话，希望我们能够再次相见
 
 # 介绍✨
 
@@ -40,7 +41,7 @@ Muicebot 内置两个分别名为沐雪和沐妮卡的聊天人设（人设是�
 
 ✅ 支持基于 `nonebot_plugin_alconna` 的几条常见指令。
 
-✅ 基于 `nonebot-plugin-orm>=0.7.7` 提供的 ORM 层保存对话数据。那有人就要问了：Maintainer，Maintainer，能不能实现长期短期记忆、LangChain、FairSeq 这些记忆优化啊。以后会有的（
+✅ 基于 `nonebot-plugin-orm>=0.7.7` 提供的 ORM 层保存对话数据。那有人就要问了：Maintainer，Maintainer，能不能实现长期短期记忆、LangChain、FairSeq 这些记忆优化啊。~~以后会有的（~~
 
 ✅ 使用 Jinja2 动态生成人设提示词
 
@@ -76,9 +77,9 @@ Muicebot 内置两个分别名为沐雪和沐妮卡的聊天人设（人设是�
 
 - 想要随时随地和大语言模型交互并寻找着能够同时兼容市面上绝大多数 SDK 的机器人框架的 AI 爱好者
 
-# TODO📝
+~~# TODO📝~~
 
-近期更新路线：[MuiceBot 更新计划](https://github.com/users/Moemu/projects/2)
+~~近期更新路线：[MuiceBot 更新计划](https://github.com/users/Moemu/projects/2)~~
 
 # 使用教程💻
 
