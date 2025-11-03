@@ -14,20 +14,20 @@ repos:
         args: ["--max-line-length=120", "--extend-ignore=W503,E203"]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.17.1
+    rev: v1.18.2
     hooks:
       - id: mypy # mypy 类型检查
         args: ["--install-types", "--non-interactive", "--ignore-missing-imports"]
         additional_dependencies: ["types-PyYAML", "types-pytz", "azure-ai-inference", "dashscope", "google-genai", "ollama"]
 
-  - repo: https://github.com/psf/black
-    rev: 25.1.0
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 25.9.0
     hooks:
       - id: black
         args: ["--config=./pyproject.toml"]
 
   - repo: https://github.com/PyCQA/isort
-    rev: 6.0.1
+    rev: 7.0.0
     hooks:
       - id: isort
         args: ["--profile", "black"]
