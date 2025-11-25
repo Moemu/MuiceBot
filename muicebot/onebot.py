@@ -593,7 +593,7 @@ async def handle_supported_adapters(
     if message_reply := ext.get_reply(get_message_id(event, bot)):
         reply_message = message_reply.msg
         if isinstance(reply_message, BotMessage):
-            bot_message += UniMessage("\n被引用的消息: ") + await UniMessage.generate(message=reply_message)
+            bot_message += UniMessage("\n被引用的消息: ") + UniMessage(reply_message)
         else:
             bot_message += UniMessage(f"\n被引用的消息: {reply_message}")
 
