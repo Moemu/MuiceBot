@@ -134,25 +134,29 @@ def init_logger():
     log_file_path = f"{log_dir}/{time.strftime('%Y-%m-%d')}.log"
 
     # 移除 NoneBot 默认的日志处理器
-    logger.remove(logger_id)
-    # 添加新的日志处理器
-    logger.add(
-        sys.stdout,
-        level=console_handler_level,
-        diagnose=True,
-        format="<lvl>[{level}] {function}: {message}</lvl>",
-        filter=default_filter,
-        colorize=True,
-    )
+    try:
+        logger.remove(logger_id)
+        # 添加新的日志处理器
+        logger.add(
+            sys.stdout,
+            level=console_handler_level,
+            diagnose=True,
+            format="<lvl>[{level}] {function}: {message}</lvl>",
+            filter=default_filter,
+            colorize=True,
+        )
 
-    logger.add(
-        log_file_path,
-        level="DEBUG",
-        format="[{time:YYYY-MM-DD HH:mm:ss}] [{level}] {function}: {message}",
-        encoding="utf-8",
-        rotation="1 day",
-        retention="7 days",
-    )
+        logger.add(
+            log_file_path,
+            level="DEBUG",
+            format="[{time:YYYY-MM-DD HH:mm:ss}] [{level}] {function}: {message}",
+            encoding="utf-8",
+            rotation="1 day",
+            retention="7 days",
+        )
+    # 如果遇到其他日志处理器已处理，则跳过
+    except ValueError:
+        logger.debug("日志处理器已存在，跳过初始化")
 
 
 def get_version() -> str:
