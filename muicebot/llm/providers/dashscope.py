@@ -275,7 +275,7 @@ class Dashscope(BaseLLM):
         messages.append(response.output.choices[0].message)
         messages.append({"role": "tool", "content": function_return, "tool_call_id": tool_call_id})
 
-        return await self._ask(messages, tools, response_format, total_tokens)  # type:ignore
+        return await self._ask(messages, tools, response_format, total_tokens)  # type: ignore
 
     async def _tool_calls_handle_stream(
         self,
@@ -296,7 +296,7 @@ class Dashscope(BaseLLM):
         """
         function_args = json.loads(func_stream.function_args)
 
-        function_return = await function_call_handler(func_stream.function_name, function_args)  # type:ignore
+        function_return = await function_call_handler(func_stream.function_name, function_args)  # type: ignore
 
         messages.append(
             {
@@ -317,7 +317,7 @@ class Dashscope(BaseLLM):
         )
         messages.append({"role": "tool", "content": function_return, "tool_call_id": func_stream.id})
 
-        return await self._ask(messages, tools, response_format, total_tokens)  # type:ignore
+        return await self._ask(messages, tools, response_format, total_tokens)  # type: ignore
 
     async def _ask(
         self,

@@ -170,13 +170,13 @@ class Ollama(BaseLLM):
                 if not tool_calls:
                     continue
 
-                for tool in tool_calls:  # type:ignore
+                for tool in tool_calls:  # type: ignore
                     function_name = tool.function.name
                     function_args = tool.function.arguments
 
                     function_return = await function_call_handler(function_name, dict(function_args))
 
-                    messages.append(chunk.message)  # type:ignore
+                    messages.append(chunk.message)  # type: ignore
                     messages.append({"role": "tool", "content": str(function_return), "name": tool.function.name})
 
                     async for content in self._ask_stream(messages, tools, response_format):

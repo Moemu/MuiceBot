@@ -12,7 +12,7 @@ def load_specified_adapter(driver: Driver, adapter: str):
     try:
         module = importlib.import_module(adapter)
         adapter = module.Adapter
-        driver.register_adapter(adapter)  # type:ignore
+        driver.register_adapter(adapter)  # type: ignore
     except ImportError:
         print(f"\33[35m{adapter}不存在，请检查拼写错误或是否已安装该适配器？")
         sys.exit(1)

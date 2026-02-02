@@ -57,7 +57,7 @@ class Caller:
         if is_coroutine_callable(func):
             self.function = func  # type: ignore
         else:
-            self.function = async_wrap(func)  # type:ignore
+            self.function = async_wrap(func)  # type: ignore
 
         self._name = func.__name__
 

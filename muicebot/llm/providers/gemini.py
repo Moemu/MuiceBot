@@ -98,7 +98,7 @@ class Gemini(BaseLLM):
             tool["parameters"]["required"] = required_parameters
             format_tools.append(tool)
 
-        function_tools = Tool(function_declarations=format_tools)  # type:ignore
+        function_tools = Tool(function_declarations=format_tools)  # type: ignore
 
         if self.enable_search:
             function_tools.google_search = GoogleSearch()
@@ -123,7 +123,7 @@ class Gemini(BaseLLM):
             if resource.type == "image" and resource.path is not None:
                 user_parts.append(
                     Part.from_bytes(
-                        data=get_file_base64(resource.path), mime_type=resource.mimetype or "image/jpeg"  # type:ignore
+                        data=get_file_base64(resource.path), mime_type=resource.mimetype or "image/jpeg"  # type: ignore
                     )
                 )
 
@@ -157,8 +157,8 @@ class Gemini(BaseLLM):
 
         try:
             chat = self.client.aio.chats.create(model=self.model_name, config=gemini_config, history=messages[:-1])
-            message = messages[-1].parts  # type:ignore
-            response = await chat.send_message(message=message)  # type:ignore
+            message = messages[-1].parts  # type: ignore
+            response = await chat.send_message(message=message)  # type: ignore
             if response.usage_metadata:
                 total_token_count = response.usage_metadata.total_token_count
                 total_tokens += total_token_count if total_token_count else 0
@@ -182,10 +182,10 @@ class Gemini(BaseLLM):
                 function_name = function_call.name
                 function_args = function_call.args
 
-                function_return = await function_call_handler(function_name, function_args)  # type:ignore
+                function_return = await function_call_handler(function_name, function_args)  # type: ignore
 
                 function_response_part = Part.from_function_response(
-                    name=function_name,  # type:ignore
+                    name=function_name,  # type: ignore
                     response={"result": function_return},
                 )
 
@@ -254,10 +254,10 @@ class Gemini(BaseLLM):
                     function_name = function_call.name
                     function_args = function_call.args
 
-                    function_return = await function_call_handler(function_name, function_args)  # type:ignore
+                    function_return = await function_call_handler(function_name, function_args)  # type: ignore
 
                     function_response_part = Part.from_function_response(
-                        name=function_name,  # type:ignore
+                        name=function_name,  # type: ignore
                         response={"result": function_return},
                     )
 

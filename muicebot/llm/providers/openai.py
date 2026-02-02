@@ -40,7 +40,7 @@ class Openai(BaseLLM):
         self.max_tokens = self.config.max_tokens
         self.temperature = self.config.temperature
         self.stream = self.config.stream
-        self.modalities = [m for m in self.config.modalities if m in {"text", "audio"}] or NOT_GIVEN  # type:ignore
+        self.modalities = [m for m in self.config.modalities if m in {"text", "audio"}] or NOT_GIVEN  # type: ignore
         self.audio = self.config.audio if (self.modalities and self.config.audio) else NOT_GIVEN
         self.extra_body = self.config.extra_body
 
@@ -148,20 +148,20 @@ class Openai(BaseLLM):
             logger.debug(f"OpenAI response: id={response.id}, choices={response.choices}, usage={response.usage}")
 
             result = ""
-            message = response.choices[0].message  # type:ignore
+            message = response.choices[0].message  # type: ignore
             total_tokens += response.usage.total_tokens if response.usage else 0
 
             if (
-                hasattr(message, "reasoning_content")  # type:ignore
-                and message.reasoning_content  # type:ignore
+                hasattr(message, "reasoning_content")  # type: ignore
+                and message.reasoning_content  # type: ignore
             ):
-                result += f"<think>{message.reasoning_content}</think>"  # type:ignore
+                result += f"<think>{message.reasoning_content}</think>"  # type: ignore
 
             if response.choices[0].finish_reason == "tool_calls" and self._tool_call_request_precheck(
                 response.choices[0].message
             ):
                 messages.append(response.choices[0].message)
-                tool_call = response.choices[0].message.tool_calls[0]  # type:ignore
+                tool_call = response.choices[0].message.tool_calls[0]  # type: ignore
                 arguments = json.loads(tool_call.function.arguments.replace("'", '"'))
 
                 function_return = await function_call_handler(tool_call.function.name, arguments)
@@ -176,8 +176,8 @@ class Openai(BaseLLM):
                 )
                 return await self._ask_sync(messages, tools, response_format, total_tokens)
 
-            if message.content:  # type:ignore
-                result += message.content  # type:ignore
+            if message.content:  # type: ignore
+                result += message.content  # type: ignore
 
             # 多模态消息处理（目前仅支持 audio 输出）
             if response.choices[0].message.audio:
@@ -259,10 +259,8 @@ class Openai(BaseLLM):
                 answer_content = delta.content
 
                 # 处理思维过程 reasoning_content
-                if (
-                    hasattr(delta, "reasoning_content") and delta.reasoning_content  # type:ignore
-                ):
-                    reasoning_content = chunk.choices[0].delta.reasoning_content  # type:ignore
+                if hasattr(delta, "reasoning_content") and delta.reasoning_content:  # type: ignore
+                    reasoning_content = chunk.choices[0].delta.reasoning_content  # type: ignore
                     stream_completions.chunk = (
                         reasoning_content if is_insert_think_label else "<think>" + reasoning_content
                     )
@@ -278,7 +276,7 @@ class Openai(BaseLLM):
 
                 # 处理多模态消息 (audio-only) (非标准方法，可能出现问题)
                 if hasattr(chunk.choices[0].delta, "audio"):
-                    audio = chunk.choices[0].delta.audio  # type:ignore
+                    audio = chunk.choices[0].delta.audio  # type: ignore
                     if audio.get("data", None):
                         audio_string += audio.get("data")
                     stream_completions.chunk = audio.get("transcript", "")
@@ -366,6 +364,6 @@ class Openai(BaseLLM):
             response_format = NOT_GIVEN
 
         if stream:
-            return self._ask_stream(messages, tools, response_format)  # type:ignore
+            return self._ask_stream(messages, tools, response_format)  # type: ignore
 
-        return await self._ask_sync(messages, tools, response_format)  # type:ignore
+        return await self._ask_sync(messages, tools, response_format)  # type: ignore
