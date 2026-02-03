@@ -19,7 +19,7 @@ class Gemini(EmbeddingModel):
         """
         查询文本嵌入
         """
-        result = await self.client.aio.models.embed_content(model=self.model, contents=texts)  # type:ignore
+        result = await self.client.aio.models.embed_content(model=self.model, contents=texts)  # type: ignore
 
         if not result.embeddings:
             raise RuntimeError("Gemini 嵌入查询无返回！")

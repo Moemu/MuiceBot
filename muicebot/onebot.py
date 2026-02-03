@@ -385,14 +385,12 @@ async def handle_command_profile(
 
 @command_model.assign("help")
 async def handle_model_help():
-    await UniMessage(
-        """Model 命令指南:
+    await UniMessage("""Model 命令指南:
     - help: 显示此帮助信息
     - load <config_name>: 加载模型配置
     - reload: 重新加载模型配置文件
     - list: 列出所有可用的模型配置
-    """
-    ).finish()
+    """).finish()
 
 
 @command_reload.handle()
@@ -484,7 +482,7 @@ async def _extract_multi_resource(
                 path = await download_file(resource.url, file_name=_get_media_filename(resource, type))
             elif resource.origin is not None:
                 logger.warning("无法通过通用方式获取文件URL，回退至适配器自有方式...")
-                path = await get_file_via_adapter(resource.origin, event)  # type:ignore
+                path = await get_file_via_adapter(resource.origin, event)  # type: ignore
             else:
                 continue
 

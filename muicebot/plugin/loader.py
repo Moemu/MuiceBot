@@ -104,7 +104,7 @@ def _get_caller_plugin_name() -> Optional[str]:
 
     # find plugin
     frame = current_frame
-    while frame := frame.f_back:  # type:ignore
+    while frame := frame.f_back:  # type: ignore
         module_name = (module := inspect.getmodule(frame)) and module.__name__
 
         if module_name is None:
