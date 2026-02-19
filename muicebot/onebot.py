@@ -54,6 +54,7 @@ START_TIME = time.time()
 scheduler = None
 connect_time = 0.0
 session_manager = SessionManager()
+enable_chat = True
 
 muice_nicknames = plugin_config.muice_nicknames
 regex_patterns = [f"^{re.escape(nick)}\\s*" for nick in muice_nicknames]
@@ -220,6 +221,18 @@ command_model = on_alconna(
     priority=10,
     block=True,
     skip_for_unmatch=False,
+    permission=SUPERUSER,
+)
+
+command_chat = on_alconna(
+    Alconna(
+        COMMAND_PREFIXES,
+        "chat",
+        Args["action", str, "enable"],
+        meta=CommandMeta("开启聊天", usage="chat disable/enable"),
+    ),
+    priority=10,
+    block=True,
     permission=SUPERUSER,
 )
 
@@ -572,6 +585,19 @@ async def _send_message(completions: ModelCompletions | AsyncGenerator[ModelStre
         await UniMessage(current_paragraph).finish()
 
 
+@command_chat.handle()
+async def handle_command_chat(action: Match[str] = AlconnaMatch("action")):
+    global enable_chat
+    if action.result == "enable":
+        enable_chat = True
+        await UniMessage("已启用聊天功能").finish()
+    elif action.result == "disable":
+        enable_chat = False
+        await UniMessage("已禁用聊天功能").finish()
+    else:
+        await UniMessage("未知的参数，请使用 enable 或 disable").finish()
+
+
 @at_event.handle()
 @nickname_event.handle()
 async def handle_supported_adapters(
@@ -586,6 +612,10 @@ async def handle_supported_adapters(
 ):
     if any((bot_message.startswith("."), bot_message.startswith("/"))):
         await UniMessage("未知的指令或权限不足").finish()
+
+    if not enable_chat:
+        logger.info("聊天功能已禁用，忽略消息")
+        return  # Keep silent when chat is disabled.
 
     # 先拿到引用消息并合并到 message (如果有)
     if message_reply := ext.get_reply(get_message_id(event, bot)):
